@@ -29,7 +29,7 @@
       display: block;
       touch-action: none;
     }
-    /* Loading Screen */
+    /* Loading Screen & Progress Bar */
     #loading-overlay {
       position: fixed;
       top: 0;
@@ -43,7 +43,7 @@
       justify-content: center;
       z-index: 9999;
       transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
-      padding: 20px;
+      padding: 24px;
       text-align: center;
     }
     #loading-overlay.hidden {
@@ -69,15 +69,49 @@
       font-weight: 300;
       letter-spacing: 0.25em;
       color: #ffe4ee;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       text-transform: uppercase;
     }
+    .progress-bar-container {
+      width: 280px;
+      max-width: 82vw;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 18px 0 10px 0;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 5%;
+      background: linear-gradient(90deg, #ff9dc4, #fda4af, #ffc2db);
+      border-radius: 999px;
+      box-shadow: 0 0 12px rgba(255, 157, 196, 0.5);
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .progress-text-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 280px;
+      max-width: 82vw;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: rgba(255, 255, 255, 0.75);
+    }
     #loading-status {
-      font-size: 13px;
-      letter-spacing: 0.1em;
-      color: rgba(255, 255, 255, 0.7);
-      margin-top: 4px;
-      min-height: 20px;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+    #loading-percent {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      color: #ffc2db;
+      margin-left: 8px;
     }
     /* Error Banner */
     #error-overlay {
@@ -87,7 +121,9 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(12, 14, 20, 0.95);
+      background: rgba(10, 12, 18, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       z-index: 10000;
       flex-direction: column;
       align-items: center;
@@ -99,33 +135,69 @@
       display: flex;
     }
     .error-box {
-      max-width: 440px;
-      background: rgba(28, 16, 18, 0.9);
-      border: 1px solid rgba(248, 113, 113, 0.35);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      max-width: 500px;
+      width: 92vw;
+      background: rgba(26, 17, 22, 0.96);
+      border: 1px solid rgba(248, 113, 113, 0.45);
+      border-radius: 14px;
+      padding: 28px 24px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75);
+    }
+    .error-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
     }
     .error-title {
-      font-size: 17px;
+      font-size: 18px;
       color: #fca5a5;
-      margin-bottom: 10px;
-      font-weight: 500;
+      margin-bottom: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
     }
     .error-msg {
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.5;
-      margin-bottom: 18px;
+      color: rgba(255, 255, 255, 0.88);
+      line-height: 1.6;
+      margin-bottom: 22px;
+      text-align: left;
+      white-space: pre-line;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+    .error-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     .error-btn {
       background: #e11d48;
       color: #ffffff;
       border: none;
-      padding: 8px 20px;
+      padding: 9px 22px;
       border-radius: 6px;
       font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    .error-btn:hover {
+      background: #be123c;
+    }
+    .error-btn-secondary {
+      background: rgba(255, 255, 255, 0.14);
+      color: #f3f4f6;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .error-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.24);
     }
     /* Ambient Title & HUD Overlay */
     .hud-header {
@@ -272,14 +344,24 @@
   <div id="loading-overlay">
     <div class="loader-symbol"></div>
     <div class="loading-title">春華秋實 · 四季流轉</div>
-    <div id="loading-status">Initializing renderer...</div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="loading-progress-fill"></div>
+    </div>
+    <div class="progress-text-row">
+      <span id="loading-status">Checking graphics capabilities...</span>
+      <span id="loading-percent">5%</span>
+    </div>
   </div>
 
   <div id="error-overlay">
     <div class="error-box">
-      <div class="error-title">Unable to Start 3D Scene</div>
+      <div class="error-icon">⚠️</div>
+      <div class="error-title" id="error-title">Unable to Start 3D Scene</div>
       <div class="error-msg" id="error-details">WebGL context or CDN modules failed to load. Please verify WebGL is supported on your browser and try again.</div>
-      <button class="error-btn" onclick="location.reload()">Reload Scene</button>
+      <div class="error-actions">
+        <button class="error-btn" onclick="location.reload()">Reload Scene</button>
+        <a class="error-btn error-btn-secondary" href="https://browsehappy.com/" target="_blank" rel="noopener">Update Browser</a>
+      </div>
     </div>
   </div>
 
@@ -313,19 +395,55 @@
 
     const sleep = () => new Promise((resolve) => requestAnimationFrame(resolve));
     const statusEl = document.getElementById('loading-status');
-    function setProgress(msg) {
-      if (statusEl) statusEl.textContent = msg;
+    const percentEl = document.getElementById('loading-percent');
+    const fillEl = document.getElementById('loading-progress-fill');
+
+    function setProgress(msg, percent) {
+      if (statusEl && msg) statusEl.textContent = msg;
+      if (percent !== undefined) {
+        const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+        if (percentEl) percentEl.textContent = clamped + '%';
+        if (fillEl) fillEl.style.width = clamped + '%';
+      }
+    }
+
+    function showWebGLError(title, message) {
+      const errEl = document.getElementById('error-overlay');
+      const titleEl = document.getElementById('error-title');
+      const msgEl = document.getElementById('error-details');
+      if (titleEl && title) titleEl.textContent = title;
+      if (msgEl && message) msgEl.textContent = message;
+      if (errEl) errEl.classList.add('active');
+      const loader = document.getElementById('loading-overlay');
+      if (loader) loader.classList.add('hidden');
+    }
+
+    // Explicit check for WebGL 2.0 and WebGL 1.0 support
+    function checkWebGLSupport() {
+      try {
+        const testCanvas = document.createElement('canvas');
+        if (window.WebGL2RenderingContext && testCanvas.getContext('webgl2')) {
+          return { supported: true, version: 'webgl2', label: 'WebGL 2.0' };
+        }
+        if (window.WebGLRenderingContext && (testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl'))) {
+          return { supported: true, version: 'webgl', label: 'WebGL 1.0' };
+        }
+      } catch (err) {
+        return { supported: false, error: err };
+      }
+      return { supported: false };
     }
 
     let firstFrameRendered = false;
     const loadTimeout = setTimeout(() => {
       if (!firstFrameRendered) {
-        const errEl = document.getElementById('error-overlay');
-        const msgEl = document.getElementById('error-details');
-        if (errEl && msgEl) {
-          msgEl.textContent = 'Startup timed out after 20s. Your device may be running low on WebGL memory.';
-          errEl.classList.add('active');
-        }
+        showWebGLError(
+          'Startup Timed Out',
+          'The scene took longer than 20 seconds to render on your device.\n\n' +
+          'Suggestions:\n' +
+          '• Your device or browser may be constrained by low GPU memory.\n' +
+          '• Please consider updating your browser (Google Chrome, Apple Safari, Microsoft Edge, or Mozilla Firefox) or closing background tabs.'
+        );
       }
     }, 20000);
 
@@ -445,17 +563,54 @@
     let width = window.innerWidth;
     let height = window.innerHeight;
 
+    setProgress('Checking WebGL graphics support...', 10);
+
+    const webglInfo = checkWebGLSupport();
+    if (!webglInfo.supported) {
+      const isOldMobile = /Android\s([1-6]\.)/i.test(navigator.userAgent) || /OS\s([1-9]|1[0-2])_/i.test(navigator.userAgent);
+      const osAdvice = isOldMobile
+        ? '\n• Your device appears to run an older mobile operating system. If possible, test on a newer smartphone or PC.'
+        : '';
+
+      showWebGLError(
+        'WebGL Not Supported',
+        'Your web browser or graphics hardware does not support WebGL or WebGL2, which is required to render interactive 3D graphics in real time.\n\n' +
+        'How to resolve this:\n' +
+        '• Update your browser to the latest version (Google Chrome, Apple Safari, Microsoft Edge, or Mozilla Firefox).\n' +
+        '• Check your browser settings to ensure "Hardware Acceleration" (or "Use graphics acceleration when available") is enabled.\n' +
+        '• If using a desktop computer, ensure your GPU display drivers are up to date.' +
+        osAdvice
+      );
+      throw new Error('WebGL or WebGL2 is not supported on this browser.');
+    }
+
     let renderer;
     try {
       renderer = new THREE.WebGLRenderer({
         canvas,
         antialias: !isMobile && CONFIG.quality !== 'Low',
-        powerPreference: 'high-performance'
+        powerPreference: 'high-performance',
+        precision: isMobile ? 'mediump' : 'highp'
       });
     } catch (e) {
-      document.getElementById('error-overlay').classList.add('active');
+      showWebGLError(
+        'Unable to Initialize 3D Graphics',
+        'Failed to initialize the ' + webglInfo.label + ' renderer. Your device may be out of GPU memory or running an unsupported graphics configuration.\n\n' +
+        'Recommended steps:\n' +
+        '• Update your browser to the latest version.\n' +
+        '• Close other open browser tabs or background apps to free system graphics memory.\n' +
+        '• Restart your web browser and try again.'
+      );
       throw e;
     }
+
+    canvas.addEventListener('webglcontextlost', (event) => {
+      event.preventDefault();
+      showWebGLError(
+        'Graphics Context Lost',
+        'The WebGL rendering context was interrupted by the operating system or GPU memory pressure.\n\nPlease reload the page or update your browser.'
+      );
+    }, false);
 
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY_SETTINGS[CONFIG.quality].dpr));
@@ -468,7 +623,6 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#cce0f0');
 
-    // Camera with safe far plane
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2500);
     camera.position.set(6, 4, 8);
 
@@ -482,7 +636,6 @@
     controls.autoRotate = CONFIG.autoRotate;
     controls.autoRotateSpeed = CONFIG.autoRotateSpeed;
 
-    // PMREM Environment
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
     const roomEnv = new RoomEnvironment();
@@ -491,7 +644,6 @@
 
     scene.fog = new THREE.FogExp2('#d5e2ec', 0.012);
 
-    // Sky with scale that fits comfortably in camera far frustum
     const sky = new Sky();
     sky.scale.setScalar(1800);
     scene.add(sky);
@@ -664,9 +816,7 @@
     const MAX_CANOPY_CAPACITY = 5500;
     const MAX_PARTICLE_CAPACITY = 500;
 
-    // Properly formed branch extrusion with correct CubicBezier curve order and front-facing triangles
     function createCurvedBranch(start, ctrl1, ctrl2, end, radiusStart, radiusEnd, radialSegments = 6) {
-      // NOTE: In Three.js CubicBezierCurve3 takes (v0=start, v1=ctrl1, v2=ctrl2, v3=end)
       const curve = new THREE.CubicBezierCurve3(start, ctrl1, ctrl2, end);
       const points = curve.getPoints(8);
       const frames = curve.computeFrenetFrames(8, false);
@@ -705,7 +855,6 @@
           const b = (i + 1) * (radialSegments + 1) + j;
           const c = (i + 1) * (radialSegments + 1) + (j + 1);
           const d = i * (radialSegments + 1) + (j + 1);
-          // Correct front-facing triangle winding order
           indices.push(a, d, b);
           indices.push(b, d, c);
         }
@@ -723,7 +872,7 @@
     // ==========================================
     async function buildScene() {
       try {
-        setProgress('Initializing renderer...');
+        setProgress('Generating procedural textures...', 28);
         await sleep();
 
         const barkColorMap = createBarkTexturesFast();
@@ -754,7 +903,7 @@
         groundMesh.receiveShadow = true;
         scene.add(groundMesh);
 
-        setProgress('Building tree...');
+        setProgress('Synthesizing tree trunk & limbs...', 50);
         await sleep();
 
         const branchGeometries = [];
@@ -859,10 +1008,9 @@
         treeMesh.receiveShadow = true;
         scene.add(treeMesh);
 
-        setProgress('Creating leaves...');
+        setProgress('Creating blossom canopy & foliage...', 72);
         await sleep();
 
-        // Lush petal plane geometry
         const petalPlaneGeom = new THREE.PlaneGeometry(0.28, 0.32);
         const petalMaterial = new THREE.MeshStandardMaterial({
           map: petalTexture,
@@ -885,7 +1033,6 @@
         const currentSeasonCfg = SEASON_CONFIGS[CONFIG.season];
         const colors = currentSeasonCfg.foliageColors;
 
-        // Interleaved instance allocation ensures ALL twigs have blossoms across any quality count!
         for (let k = 0; k < perAnchor; k++) {
           for (let a = 0; a < numAnchors; a++) {
             if (instanceIdx >= MAX_CANOPY_CAPACITY) break;
@@ -938,7 +1085,7 @@
         if (canopyMesh.instanceColor) canopyMesh.instanceColor.needsUpdate = true;
         scene.add(canopyMesh);
 
-        setProgress('Starting scene...');
+        setProgress('Populating falling petals & lighting...', 88);
         await sleep();
 
         const particleGeom = new THREE.PlaneGeometry(0.12, 0.15);
@@ -987,6 +1134,9 @@
         burstMesh.count = 0;
         scene.add(burstMesh);
 
+        setProgress('Configuring cinematic shaders...', 96);
+        await sleep();
+
         const renderPass = new RenderPass(scene, camera);
         bloomPass = new UnrealBloomPass(
           new THREE.Vector2(width, height),
@@ -1004,15 +1154,18 @@
         updateEnvironmentState();
         initGui();
 
+        setProgress('Rendering first frame...', 100);
+        await sleep();
+
         animate();
       } catch (err) {
         console.error('Error during scene initialization:', err);
-        const errEl = document.getElementById('error-overlay');
-        const msgEl = document.getElementById('error-details');
-        if (errEl && msgEl) {
-          msgEl.textContent = 'Startup error: ' + (err.message || err);
-          errEl.classList.add('active');
-        }
+        showWebGLError(
+          'Scene Initialization Error',
+          'An error occurred while loading 3D assets into WebGL memory:\n\n' +
+          (err.message || err) + '\n\n' +
+          'Please consider updating your browser or closing other applications to free GPU memory.'
+        );
       }
     }
 
@@ -1405,6 +1558,7 @@
       if (!firstFrameRendered) {
         firstFrameRendered = true;
         clearTimeout(loadTimeout);
+        setProgress('Scene ready', 100);
         const loader = document.getElementById('loading-overlay');
         if (loader) {
           loader.classList.add('hidden');
