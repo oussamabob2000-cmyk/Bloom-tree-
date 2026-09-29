@@ -52,8 +52,8 @@
       pointer-events: none;
     }
     .loader-symbol {
-      width: 56px;
-      height: 56px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
       border: 2px solid rgba(255, 182, 193, 0.2);
       border-top-color: #ff9dc4;
@@ -249,7 +249,6 @@
   </style>
 
   <script>
-    // Global error listener for fast mobile failure diagnosis
     window.addEventListener('error', function(e) {
       const errEl = document.getElementById('error-overlay');
       const msgEl = document.getElementById('error-details');
@@ -312,14 +311,12 @@
     import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
     import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
-    // Helper for non-blocking chunked startup
     const sleep = () => new Promise((resolve) => requestAnimationFrame(resolve));
     const statusEl = document.getElementById('loading-status');
     function setProgress(msg) {
       if (statusEl) statusEl.textContent = msg;
     }
 
-    // 20-second timeout guard
     let firstFrameRendered = false;
     const loadTimeout = setTimeout(() => {
       if (!firstFrameRendered) {
@@ -339,7 +336,6 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const paramQuality = urlParams.get('quality')?.toLowerCase();
-    const isDebug = urlParams.get('debug') === '1';
 
     let defaultQuality = isMobile ? 'Low' : 'Medium';
     if (paramQuality === 'low') defaultQuality = 'Low';
@@ -432,9 +428,9 @@
         groundAccent: '#c8d7eb',
         groundPetalTint: '#f5f9ff',
         foliageColors: ['#dbe7f5', '#eaf2fc', '#ffffff', '#c3d7ee', '#b0c8e3'],
-        canopyCounts: { Low: 120, Medium: 320, High: 750 },
+        canopyCounts: { Low: 250, Medium: 500, High: 900 },
         particleCounts: { Low: 130, Medium: 240, High: 450 },
-        canopyScale: 0.22,
+        canopyScale: 0.35,
         sunIntensityMult: 0.75,
         skyTurbidity: 2.0,
         skyRayleigh: 0.9,
@@ -470,8 +466,9 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#cce0f0');
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2500);
     camera.position.set(6, 4, 8);
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -484,7 +481,6 @@
     controls.autoRotate = CONFIG.autoRotate;
     controls.autoRotateSpeed = CONFIG.autoRotateSpeed;
 
-    // Environment & Atmospheric Setup
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
     const roomEnv = new RoomEnvironment();
@@ -494,7 +490,7 @@
     scene.fog = new THREE.FogExp2('#d5e2ec', 0.012);
 
     const sky = new Sky();
-    sky.scale.setScalar(400000);
+    sky.scale.setScalar(1800);
     scene.add(sky);
 
     const sunPosition = new THREE.Vector3();
@@ -516,7 +512,7 @@
     const hemiLight = new THREE.HemisphereLight('#cbe2fb', '#556942', 1.0);
     scene.add(hemiLight);
 
-    const ambientLight = new THREE.AmbientLight('#2a384c', 0.35);
+    const ambientLight = new THREE.AmbientLight('#2a384c', 0.45);
     scene.add(ambientLight);
 
     // ==========================================
@@ -531,19 +527,19 @@
 
       const grad = ctx.createLinearGradient(0, 0, size, 0);
       grad.addColorStop(0.0, '#362820');
-      grad.addColorStop(0.4, '#45352c');
+      grad.addColorStop(0.4, '#48372d');
       grad.addColorStop(0.7, '#2f231b');
-      grad.addColorStop(1.0, '#3a2b22');
+      grad.addColorStop(1.0, '#3c2c23');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, size, size);
 
-      const furrowCount = isMobile ? 600 : 1800;
+      const furrowCount = isMobile ? 600 : 1600;
       for (let i = 0; i < furrowCount; i++) {
         const x = Math.random() * size;
         const y = Math.random() * size;
         const len = 25 + Math.random() * 80;
         const isDark = Math.random() > 0.45;
-        ctx.strokeStyle = isDark ? 'rgba(20, 14, 10, 0.15)' : 'rgba(100, 80, 68, 0.12)';
+        ctx.strokeStyle = isDark ? 'rgba(18, 12, 8, 0.22)' : 'rgba(110, 88, 74, 0.16)';
         ctx.lineWidth = 1 + Math.random() * 2.5;
         ctx.beginPath();
         ctx.moveTo(x, y);
@@ -577,9 +573,9 @@
 
       const petalGrad = ctx.createRadialGradient(0, -size * 0.4, 6, 0, -size * 0.4, size * 0.5);
       petalGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.98)');
-      petalGrad.addColorStop(0.4, 'rgba(255, 225, 235, 0.92)');
-      petalGrad.addColorStop(0.8, 'rgba(255, 185, 210, 0.88)');
-      petalGrad.addColorStop(1.0, 'rgba(255, 160, 192, 0.78)');
+      petalGrad.addColorStop(0.4, 'rgba(255, 225, 235, 0.94)');
+      petalGrad.addColorStop(0.8, 'rgba(255, 185, 210, 0.9)');
+      petalGrad.addColorStop(1.0, 'rgba(255, 160, 192, 0.82)');
       ctx.fillStyle = petalGrad;
       ctx.fill();
 
@@ -608,7 +604,7 @@
       ctx.fillStyle = cfg.groundBase;
       ctx.fillRect(0, 0, size, size);
 
-      const dappleCount = isMobile ? 600 : 1800;
+      const dappleCount = isMobile ? 600 : 1600;
       for (let i = 0; i < dappleCount; i++) {
         const x = Math.random() * size;
         const y = Math.random() * size;
@@ -620,7 +616,7 @@
         ctx.fill();
       }
 
-      ctx.globalAlpha = 0.7;
+      ctx.globalAlpha = 0.75;
       const petalCount = isMobile ? 120 : 350;
       for (let p = 0; p < petalCount; p++) {
         const angle = Math.random() * Math.PI * 2;
@@ -629,7 +625,7 @@
         const py = size / 2 + Math.sin(angle) * dist;
         ctx.fillStyle = cfg.groundPetalTint;
         ctx.beginPath();
-        ctx.arc(px, py, 2, 0, Math.PI * 2);
+        ctx.arc(px, py, 2.5, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -649,7 +645,7 @@
     }
 
     // ==========================================
-    // 4. SCENE CONSTRUCTION VARIABLES
+    // 4. SCENE CONSTRUCTION & PROPER GEOMETRY
     // ==========================================
     let groundMaterial, groundMesh;
     let treeMesh;
@@ -662,11 +658,11 @@
     const dummy = new THREE.Object3D();
     const particleList = [];
     const burstParticles = [];
-    const MAX_CANOPY_CAPACITY = 6000;
-    const MAX_PARTICLE_CAPACITY = 550;
+    const MAX_CANOPY_CAPACITY = 5500;
+    const MAX_PARTICLE_CAPACITY = 500;
 
-    function createCurvedBranch(start, end, ctrl1, ctrl2, radiusStart, radiusEnd, radialSegments = 6) {
-      const curve = new THREE.CubicBezierCurve3(start, end, ctrl1, ctrl2);
+    function createCurvedBranch(start, ctrl1, ctrl2, end, radiusStart, radiusEnd, radialSegments = 6) {
+      const curve = new THREE.CubicBezierCurve3(start, ctrl1, ctrl2, end);
       const points = curve.getPoints(8);
       const frames = curve.computeFrenetFrames(8, false);
       const geom = new THREE.BufferGeometry();
@@ -704,8 +700,8 @@
           const b = (i + 1) * (radialSegments + 1) + j;
           const c = (i + 1) * (radialSegments + 1) + (j + 1);
           const d = i * (radialSegments + 1) + (j + 1);
-          indices.push(a, b, d);
-          indices.push(b, c, d);
+          indices.push(a, d, b);
+          indices.push(b, d, c);
         }
       }
 
@@ -720,270 +716,296 @@
     // 5. ASYNC INITIALIZATION PIPELINE
     // ==========================================
     async function buildScene() {
-      setProgress('Initializing renderer...');
-      await sleep();
+      try {
+        setProgress('Initializing renderer...');
+        await sleep();
 
-      const barkColorMap = createBarkTexturesFast();
-      const petalTexture = createPetalTextureFast();
+        const barkColorMap = createBarkTexturesFast();
+        const petalTexture = createPetalTextureFast();
 
-      const groundGeom = new THREE.CylinderGeometry(8.5, 9.0, 0.4, 32);
-      const posAttr = groundGeom.attributes.position;
-      for (let i = 0; i < posAttr.count; i++) {
-        const y = posAttr.getY(i);
-        if (y > 0) {
-          const x = posAttr.getX(i);
-          const z = posAttr.getZ(i);
-          const dist = Math.sqrt(x * x + z * z);
-          const mound = Math.max(0, 1 - dist / 8.5);
-          posAttr.setY(i, y + Math.pow(mound, 1.8) * 0.4);
-        }
-      }
-      groundGeom.computeVertexNormals();
-
-      groundMaterial = new THREE.MeshStandardMaterial({
-        map: createGroundTextureFast(CONFIG.season),
-        roughness: 0.9,
-        metalness: 0.02
-      });
-      groundMesh = new THREE.Mesh(groundGeom, groundMaterial);
-      groundMesh.position.y = -0.2;
-      groundMesh.receiveShadow = true;
-      scene.add(groundMesh);
-
-      setProgress('Building tree...');
-      await sleep();
-
-      const branchGeometries = [];
-      for (let r = 0; r < 4; r++) {
-        const angle = (r / 4) * Math.PI * 2 + 0.2;
-        const rx = Math.cos(angle) * 0.85;
-        const rz = Math.sin(angle) * 0.85;
-        branchGeometries.push(createCurvedBranch(
-          new THREE.Vector3(rx, 0, rz),
-          new THREE.Vector3(rx * 0.35, 0.6, rz * 0.35),
-          new THREE.Vector3(rx * 0.7, 0.1, rz * 0.7),
-          new THREE.Vector3(rx * 0.45, 0.35, rz * 0.45),
-          0.16, 0.26, 6
-        ));
-      }
-
-      const p0 = new THREE.Vector3(0, 0, 0);
-      const p1 = new THREE.Vector3(0.3, 1.2, 0.2);
-      branchGeometries.push(createCurvedBranch(
-        p0, p1,
-        new THREE.Vector3(-0.15, 0.4, -0.1),
-        new THREE.Vector3(0.25, 0.8, 0.15),
-        0.4, 0.3, 8
-      ));
-
-      const p2 = new THREE.Vector3(-0.2, 2.3, -0.1);
-      branchGeometries.push(createCurvedBranch(
-        p1, p2,
-        new THREE.Vector3(0.35, 1.6, 0.2),
-        new THREE.Vector3(0.1, 2.0, 0.05),
-        0.3, 0.22, 8
-      ));
-
-      const limbs = [
-        { start: p2, end: new THREE.Vector3(-1.7, 3.1, 0.5), c1: new THREE.Vector3(-0.7, 2.6, 0.2), c2: new THREE.Vector3(-1.3, 2.8, 0.4), rS: 0.18, rE: 0.1 },
-        { start: p2, end: new THREE.Vector3(1.6, 3.2, -0.4), c1: new THREE.Vector3(0.5, 2.6, 0.0), c2: new THREE.Vector3(1.2, 2.9, -0.3), rS: 0.17, rE: 0.1 },
-        { start: p2, end: new THREE.Vector3(0.2, 3.7, 1.5), c1: new THREE.Vector3(-0.1, 2.8, 0.5), c2: new THREE.Vector3(0.1, 3.3, 1.1), rS: 0.15, rE: 0.09 },
-        { start: p2, end: new THREE.Vector3(-0.3, 3.8, -1.4), c1: new THREE.Vector3(-0.2, 2.9, -0.5), c2: new THREE.Vector3(-0.3, 3.4, -1.0), rS: 0.16, rE: 0.09 },
-        { start: p2, end: new THREE.Vector3(0.4, 4.3, 0.2), c1: new THREE.Vector3(0.0, 3.1, 0.1), c2: new THREE.Vector3(0.2, 3.7, 0.15), rS: 0.16, rE: 0.08 }
-      ];
-
-      limbs.forEach((limb) => {
-        branchGeometries.push(createCurvedBranch(limb.start, limb.end, limb.c1, limb.c2, limb.rS, limb.rE, 6));
-
-        for (let b = 0; b < 3; b++) {
-          const t = 0.4 + (b / 3) * 0.6;
-          const subStart = new THREE.Vector3().lerpVectors(limb.start, limb.end, t);
-          const spreadDir = new THREE.Vector3(
-            (Math.random() - 0.5) * 2.2,
-            0.2 + Math.random() * 0.7,
-            (Math.random() - 0.5) * 2.2
-          ).normalize();
-
-          const subLen = 1.0 + Math.random() * 0.8;
-          const subEnd = subStart.clone().addScaledVector(spreadDir, subLen);
-          const sc1 = subStart.clone().addScaledVector(spreadDir, subLen * 0.4);
-          const sc2 = subStart.clone().addScaledVector(spreadDir, subLen * 0.75);
-
-          branchGeometries.push(createCurvedBranch(subStart, subEnd, sc1, sc2, limb.rE * 0.85, 0.05, 5));
-
-          for (let tw = 0; tw < 2; tw++) {
-            const twT = 0.35 + tw * 0.45;
-            const twStart = new THREE.Vector3().lerpVectors(subStart, subEnd, twT);
-            const twSpread = new THREE.Vector3(
-              (Math.random() - 0.5) * 1.8,
-              0.1 + Math.random() * 0.6,
-              (Math.random() - 0.5) * 1.8
-            ).normalize();
-            const twLen = 0.5 + Math.random() * 0.5;
-            const twEnd = twStart.clone().addScaledVector(twSpread, twLen);
-
-            branchGeometries.push(createCurvedBranch(twStart, twEnd, twStart.clone().addScaledVector(twSpread, twLen * 0.5), twEnd, 0.04, 0.02, 4));
-
-            twigAnchorPoints.push({ pos: twEnd.clone() });
+        const groundGeom = new THREE.CylinderGeometry(8.5, 9.0, 0.4, 32);
+        const posAttr = groundGeom.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+          const y = posAttr.getY(i);
+          if (y > 0) {
+            const x = posAttr.getX(i);
+            const z = posAttr.getZ(i);
+            const dist = Math.sqrt(x * x + z * z);
+            const mound = Math.max(0, 1 - dist / 8.5);
+            posAttr.setY(i, y + Math.pow(mound, 1.8) * 0.4);
           }
         }
-      });
+        groundGeom.computeVertexNormals();
 
-      const mergedTreeGeometry = BufferGeometryUtils.mergeGeometries(branchGeometries, false);
-      branchGeometries.forEach((g) => g.dispose());
+        groundMaterial = new THREE.MeshStandardMaterial({
+          map: createGroundTextureFast(CONFIG.season),
+          roughness: 0.9,
+          metalness: 0.02,
+          side: THREE.DoubleSide
+        });
+        groundMesh = new THREE.Mesh(groundGeom, groundMaterial);
+        groundMesh.position.y = -0.2;
+        groundMesh.receiveShadow = true;
+        scene.add(groundMesh);
 
-      const barkMaterial = new THREE.MeshStandardMaterial({
-        map: barkColorMap,
-        roughness: 0.88,
-        metalness: 0.03
-      });
+        setProgress('Building tree...');
+        await sleep();
 
-      treeMesh = new THREE.Mesh(mergedTreeGeometry, barkMaterial);
-      treeMesh.castShadow = QUALITY_SETTINGS[CONFIG.quality].shadows;
-      treeMesh.receiveShadow = true;
-      scene.add(treeMesh);
+        const branchGeometries = [];
 
-      setProgress('Creating leaves...');
-      await sleep();
+        // 1. Root flare buttresses
+        for (let r = 0; r < 5; r++) {
+          const angle = (r / 5) * Math.PI * 2 + 0.2;
+          const rx = Math.cos(angle) * 0.9;
+          const rz = Math.sin(angle) * 0.9;
+          branchGeometries.push(createCurvedBranch(
+            new THREE.Vector3(rx, 0, rz),
+            new THREE.Vector3(rx * 0.7, 0.1, rz * 0.7),
+            new THREE.Vector3(rx * 0.45, 0.35, rz * 0.45),
+            new THREE.Vector3(rx * 0.3, 0.6, rz * 0.3),
+            0.18, 0.28, 6
+          ));
+        }
 
-      const petalPlaneGeom = new THREE.PlaneGeometry(0.18, 0.22);
-      const petalMaterial = new THREE.MeshStandardMaterial({
-        map: petalTexture,
-        transparent: true,
-        alphaTest: 0.2,
-        depthWrite: true,
-        side: THREE.DoubleSide,
-        roughness: 0.75,
-        metalness: 0.02
-      });
+        // 2. Main trunk (classical Chinese scholar graceful S-curve)
+        const p0 = new THREE.Vector3(0, 0, 0);
+        const p1 = new THREE.Vector3(0.3, 1.2, 0.2);
+        branchGeometries.push(createCurvedBranch(
+          p0,
+          new THREE.Vector3(-0.15, 0.4, -0.1),
+          new THREE.Vector3(0.25, 0.8, 0.15),
+          p1,
+          0.44, 0.34, 8
+        ));
 
-      canopyMesh = new THREE.InstancedMesh(petalPlaneGeom, petalMaterial, MAX_CANOPY_CAPACITY);
-      canopyMesh.castShadow = false;
-      canopyMesh.receiveShadow = false;
+        const p2 = new THREE.Vector3(-0.2, 2.3, -0.1);
+        branchGeometries.push(createCurvedBranch(
+          p1,
+          new THREE.Vector3(0.35, 1.6, 0.2),
+          new THREE.Vector3(0.1, 2.0, 0.05),
+          p2,
+          0.34, 0.26, 8
+        ));
 
-      const numAnchors = twigAnchorPoints.length;
-      const instancesPerAnchor = Math.ceil(MAX_CANOPY_CAPACITY / numAnchors);
-      let instanceIdx = 0;
+        // 3. Primary scaffold limbs
+        const limbs = [
+          { start: p2, c1: new THREE.Vector3(-0.7, 2.6, 0.2), c2: new THREE.Vector3(-1.3, 2.8, 0.4), end: new THREE.Vector3(-1.8, 3.1, 0.6), rS: 0.2, rE: 0.12 },
+          { start: p2, c1: new THREE.Vector3(0.5, 2.6, 0.0), c2: new THREE.Vector3(1.2, 2.9, -0.3), end: new THREE.Vector3(1.7, 3.2, -0.5), rS: 0.19, rE: 0.11 },
+          { start: p2, c1: new THREE.Vector3(-0.1, 2.8, 0.5), c2: new THREE.Vector3(0.1, 3.3, 1.1), end: new THREE.Vector3(0.2, 3.7, 1.6), rS: 0.17, rE: 0.1 },
+          { start: p2, c1: new THREE.Vector3(-0.2, 2.9, -0.5), c2: new THREE.Vector3(-0.3, 3.4, -1.0), end: new THREE.Vector3(-0.4, 3.8, -1.5), rS: 0.18, rE: 0.1 },
+          { start: p2, c1: new THREE.Vector3(0.0, 3.1, 0.1), c2: new THREE.Vector3(0.2, 3.7, 0.15), end: new THREE.Vector3(0.4, 4.4, 0.2), rS: 0.18, rE: 0.09 }
+        ];
 
-      const currentSeasonCfg = SEASON_CONFIGS[CONFIG.season];
-      const colors = currentSeasonCfg.foliageColors;
+        limbs.forEach((limb) => {
+          branchGeometries.push(createCurvedBranch(limb.start, limb.c1, limb.c2, limb.end, limb.rS, limb.rE, 7));
 
-      twigAnchorPoints.forEach((anchor) => {
-        for (let k = 0; k < instancesPerAnchor && instanceIdx < MAX_CANOPY_CAPACITY; k++) {
-          const theta = Math.random() * Math.PI * 2;
-          const phi = Math.random() * Math.PI;
-          const clusterRadius = 0.06 + Math.random() * 0.42;
+          for (let b = 0; b < 3; b++) {
+            const t = 0.38 + (b / 3) * 0.62;
+            const subStart = new THREE.Vector3().lerpVectors(limb.start, limb.end, t);
+            const spreadDir = new THREE.Vector3(
+              (Math.random() - 0.5) * 2.2,
+              0.25 + Math.random() * 0.75,
+              (Math.random() - 0.5) * 2.2
+            ).normalize();
 
-          const offset = new THREE.Vector3(
-            Math.sin(phi) * Math.cos(theta) * clusterRadius * 1.2,
-            (Math.cos(phi) * 0.8 + 0.3) * clusterRadius,
-            Math.sin(phi) * Math.sin(theta) * clusterRadius * 1.2
-          );
+            const subLen = 1.0 + Math.random() * 0.85;
+            const subEnd = subStart.clone().addScaledVector(spreadDir, subLen);
+            const sc1 = subStart.clone().addScaledVector(spreadDir, subLen * 0.35);
+            const sc2 = subStart.clone().addScaledVector(spreadDir, subLen * 0.75);
 
-          const pos = anchor.pos.clone().add(offset);
-          const rot = new THREE.Euler(
-            (Math.random() - 0.5) * Math.PI * 1.5,
-            (Math.random() - 0.5) * Math.PI * 2,
-            (Math.random() - 0.5) * Math.PI * 1.5
-          );
-          const baseScale = 0.75 + Math.random() * 0.5;
+            branchGeometries.push(createCurvedBranch(subStart, sc1, sc2, subEnd, limb.rE * 0.85, 0.05, 5));
 
-          dummy.position.copy(pos);
-          dummy.rotation.copy(rot);
-          dummy.scale.set(baseScale, baseScale, baseScale);
-          dummy.updateMatrix();
+            for (let tw = 0; tw < 2; tw++) {
+              const twT = 0.35 + tw * 0.5;
+              const twStart = new THREE.Vector3().lerpVectors(subStart, subEnd, twT);
+              const twSpread = new THREE.Vector3(
+                (Math.random() - 0.5) * 1.8,
+                0.15 + Math.random() * 0.65,
+                (Math.random() - 0.5) * 1.8
+              ).normalize();
+              const twLen = 0.5 + Math.random() * 0.55;
+              const twEnd = twStart.clone().addScaledVector(twSpread, twLen);
+              const tc1 = twStart.clone().addScaledVector(twSpread, twLen * 0.35);
+              const tc2 = twStart.clone().addScaledVector(twSpread, twLen * 0.7);
 
-          canopyMesh.setMatrixAt(instanceIdx, dummy.matrix);
+              branchGeometries.push(createCurvedBranch(twStart, tc1, tc2, twEnd, 0.045, 0.02, 4));
+
+              twigAnchorPoints.push({
+                pos: twEnd.clone(),
+                dir: twSpread.clone()
+              });
+            }
+          }
+        });
+
+        const mergedTreeGeometry = BufferGeometryUtils.mergeGeometries(branchGeometries, false);
+        branchGeometries.forEach((g) => g.dispose());
+
+        const barkMaterial = new THREE.MeshStandardMaterial({
+          map: barkColorMap,
+          roughness: 0.86,
+          metalness: 0.03,
+          side: THREE.DoubleSide
+        });
+
+        treeMesh = new THREE.Mesh(mergedTreeGeometry, barkMaterial);
+        treeMesh.castShadow = QUALITY_SETTINGS[CONFIG.quality].shadows;
+        treeMesh.receiveShadow = true;
+        scene.add(treeMesh);
+
+        setProgress('Creating leaves...');
+        await sleep();
+
+        const petalPlaneGeom = new THREE.PlaneGeometry(0.28, 0.32);
+        const petalMaterial = new THREE.MeshStandardMaterial({
+          map: petalTexture,
+          transparent: true,
+          alphaTest: 0.12,
+          depthWrite: true,
+          side: THREE.DoubleSide,
+          roughness: 0.72,
+          metalness: 0.02
+        });
+
+        canopyMesh = new THREE.InstancedMesh(petalPlaneGeom, petalMaterial, MAX_CANOPY_CAPACITY);
+        canopyMesh.castShadow = false;
+        canopyMesh.receiveShadow = false;
+
+        const numAnchors = twigAnchorPoints.length;
+        const perAnchor = Math.floor(MAX_CANOPY_CAPACITY / numAnchors);
+        let instanceIdx = 0;
+
+        const currentSeasonCfg = SEASON_CONFIGS[CONFIG.season];
+        const colors = currentSeasonCfg.foliageColors;
+
+        for (let k = 0; k < perAnchor; k++) {
+          for (let a = 0; a < numAnchors; a++) {
+            if (instanceIdx >= MAX_CANOPY_CAPACITY) break;
+            const anchor = twigAnchorPoints[a];
+
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+            const clusterRadius = 0.08 + Math.random() * 0.48;
+
+            const offset = new THREE.Vector3(
+              Math.sin(phi) * Math.cos(theta) * clusterRadius * 1.3,
+              (Math.cos(phi) * 0.8 + 0.3) * clusterRadius,
+              Math.sin(phi) * Math.sin(theta) * clusterRadius * 1.3
+            );
+
+            const pos = anchor.pos.clone().add(offset);
+            const rot = new THREE.Euler(
+              (Math.random() - 0.5) * Math.PI * 1.5,
+              (Math.random() - 0.5) * Math.PI * 2,
+              (Math.random() - 0.5) * Math.PI * 1.5
+            );
+            const baseScale = 0.85 + Math.random() * 0.55;
+
+            dummy.position.copy(pos);
+            dummy.rotation.copy(rot);
+            dummy.scale.set(baseScale, baseScale, baseScale);
+            dummy.updateMatrix();
+
+            canopyMesh.setMatrixAt(instanceIdx, dummy.matrix);
+
+            const hex = colors[Math.floor(Math.random() * colors.length)];
+            canopyMesh.setColorAt(instanceIdx, new THREE.Color(hex));
+
+            canopyInstanceData.push({
+              basePos: pos.clone(),
+              baseRot: rot.clone(),
+              baseScale
+            });
+
+            instanceIdx++;
+          }
+        }
+
+        const targetCanopyCount = Math.min(
+          instanceIdx,
+          currentSeasonCfg.canopyCounts[CONFIG.quality]
+        );
+        canopyMesh.count = targetCanopyCount;
+        canopyMesh.instanceMatrix.needsUpdate = true;
+        if (canopyMesh.instanceColor) canopyMesh.instanceColor.needsUpdate = true;
+        scene.add(canopyMesh);
+
+        setProgress('Starting scene...');
+        await sleep();
+
+        const particleGeom = new THREE.PlaneGeometry(0.12, 0.15);
+        const particleMat = new THREE.MeshStandardMaterial({
+          map: petalTexture,
+          transparent: true,
+          alphaTest: 0.12,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          roughness: 0.7
+        });
+
+        particlesMesh = new THREE.InstancedMesh(particleGeom, particleMat, MAX_PARTICLE_CAPACITY);
+        scene.add(particlesMesh);
+
+        for (let i = 0; i < MAX_PARTICLE_CAPACITY; i++) {
+          const p = {
+            x: (Math.random() - 0.5) * 6,
+            y: 0.5 + Math.random() * 5.5,
+            z: (Math.random() - 0.5) * 6,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: -(0.35 + Math.random() * 0.45),
+            vz: (Math.random() - 0.5) * 0.25,
+            rotX: Math.random() * Math.PI * 2,
+            rotY: Math.random() * Math.PI * 2,
+            rotZ: Math.random() * Math.PI * 2,
+            spinX: (Math.random() - 0.5) * 3,
+            spinY: (Math.random() - 0.5) * 2,
+            spinZ: (Math.random() - 0.5) * 3,
+            wobblePhase: Math.random() * Math.PI * 2,
+            wobbleSpeed: 2.0 + Math.random() * 2.5,
+            scale: 0.7 + Math.random() * 0.5,
+            isFirefly: false
+          };
+          particleList.push(p);
 
           const hex = colors[Math.floor(Math.random() * colors.length)];
-          canopyMesh.setColorAt(instanceIdx, new THREE.Color(hex));
-
-          canopyInstanceData.push({
-            basePos: pos.clone(),
-            baseRot: rot.clone(),
-            baseScale
-          });
-
-          instanceIdx++;
+          particlesMesh.setColorAt(i, new THREE.Color(hex));
         }
-      });
 
-      const targetCanopyCount = Math.min(
-        instanceIdx,
-        currentSeasonCfg.canopyCounts[CONFIG.quality]
-      );
-      canopyMesh.count = targetCanopyCount;
-      canopyMesh.instanceMatrix.needsUpdate = true;
-      if (canopyMesh.instanceColor) canopyMesh.instanceColor.needsUpdate = true;
-      scene.add(canopyMesh);
+        particlesMesh.count = currentSeasonCfg.particleCounts[CONFIG.quality];
+        particlesMesh.instanceMatrix.needsUpdate = true;
+        if (particlesMesh.instanceColor) particlesMesh.instanceColor.needsUpdate = true;
 
-      setProgress('Starting scene...');
-      await sleep();
+        burstMesh = new THREE.InstancedMesh(particleGeom, particleMat, 50);
+        burstMesh.count = 0;
+        scene.add(burstMesh);
 
-      const particleGeom = new THREE.PlaneGeometry(0.12, 0.15);
-      const particleMat = new THREE.MeshStandardMaterial({
-        map: petalTexture,
-        transparent: true,
-        alphaTest: 0.15,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        roughness: 0.7
-      });
+        const renderPass = new RenderPass(scene, camera);
+        bloomPass = new UnrealBloomPass(
+          new THREE.Vector2(width, height),
+          0.22,
+          0.65,
+          0.85
+        );
+        bloomPass.enabled = CONFIG.bloomEnabled;
 
-      particlesMesh = new THREE.InstancedMesh(particleGeom, particleMat, MAX_PARTICLE_CAPACITY);
-      scene.add(particlesMesh);
+        composer = new EffectComposer(renderer);
+        composer.addPass(renderPass);
+        composer.addPass(bloomPass);
+        composer.addPass(new OutputPass());
 
-      for (let i = 0; i < MAX_PARTICLE_CAPACITY; i++) {
-        const p = {
-          x: (Math.random() - 0.5) * 6,
-          y: 0.5 + Math.random() * 5.5,
-          z: (Math.random() - 0.5) * 6,
-          vx: (Math.random() - 0.5) * 0.25,
-          vy: -(0.35 + Math.random() * 0.45),
-          vz: (Math.random() - 0.5) * 0.25,
-          rotX: Math.random() * Math.PI * 2,
-          rotY: Math.random() * Math.PI * 2,
-          rotZ: Math.random() * Math.PI * 2,
-          spinX: (Math.random() - 0.5) * 3,
-          spinY: (Math.random() - 0.5) * 2,
-          spinZ: (Math.random() - 0.5) * 3,
-          wobblePhase: Math.random() * Math.PI * 2,
-          wobbleSpeed: 2.0 + Math.random() * 2.5,
-          scale: 0.65 + Math.random() * 0.5,
-          isFirefly: false
-        };
-        particleList.push(p);
+        updateEnvironmentState();
+        initGui();
 
-        const hex = colors[Math.floor(Math.random() * colors.length)];
-        particlesMesh.setColorAt(i, new THREE.Color(hex));
+        animate();
+      } catch (err) {
+        console.error('Error during scene initialization:', err);
+        const errEl = document.getElementById('error-overlay');
+        const msgEl = document.getElementById('error-details');
+        if (errEl && msgEl) {
+          msgEl.textContent = 'Startup error: ' + (err.message || err);
+          errEl.classList.add('active');
+        }
       }
-
-      particlesMesh.count = currentSeasonCfg.particleCounts[CONFIG.quality];
-      particlesMesh.instanceMatrix.needsUpdate = true;
-      if (particlesMesh.instanceColor) particlesMesh.instanceColor.needsUpdate = true;
-
-      burstMesh = new THREE.InstancedMesh(particleGeom, particleMat, 50);
-      burstMesh.count = 0;
-      scene.add(burstMesh);
-
-      const renderPass = new RenderPass(scene, camera);
-      bloomPass = new UnrealBloomPass(
-        new THREE.Vector2(width, height),
-        0.22,
-        0.65,
-        0.85
-      );
-      bloomPass.enabled = CONFIG.bloomEnabled;
-
-      composer = new EffectComposer(renderer);
-      composer.addPass(renderPass);
-      composer.addPass(bloomPass);
-      composer.addPass(new OutputPass());
-
-      updateEnvironmentState();
-      initGui();
-
-      animate();
     }
 
     // ==========================================
@@ -1053,6 +1075,7 @@
       hemiLight.groundColor.copy(hemiGroundCol);
       scene.fog.color.copy(fogCol);
       scene.fog.density = cfg.fogDensity;
+      scene.background.copy(fogCol);
 
       const badgeElem = document.getElementById('season-indicator');
       if (badgeElem) {
@@ -1273,7 +1296,6 @@
       const delta = Math.min(clock.getDelta(), 0.1);
       const elapsed = clock.getElapsedTime();
 
-      // FPS Monitor for Automatic Quality Reduction
       frameCount++;
       fpsTimeAccum += delta;
       if (fpsTimeAccum >= 1.0) {
