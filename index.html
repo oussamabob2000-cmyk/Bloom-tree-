@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Chinese Blossom Tree 3D</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0d13;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: #f3f4f6;
+    }
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+    /* Loading Screen */
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #171b26 0%, #07090e 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.2s;
+    }
+    #loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loader-symbol {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 182, 193, 0.25);
+      border-top-color: #ff9dc4;
+      animation: spin 1.4s linear infinite;
+      margin-bottom: 24px;
+      box-shadow: 0 0 20px rgba(255, 157, 196, 0.2);
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-title {
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: 0.25em;
+      color: #ffe4ee;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .loading-subtitle {
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      color: rgba(255, 255, 255, 0.45);
+    }
+    /* Ambient Title & HUD Overlay */
+    .hud-header {
+      position: absolute;
+      top: 24px;
+      left: 28px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .hud-title-cn {
+      font-size: 24px;
+      font-weight: 300;
+      letter-spacing: 0.35em;
+      color: rgba(255, 255, 255, 0.92);
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+      margin-bottom: 4px;
+    }
+    .hud-subtitle-en {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      color: rgba(255, 192, 203, 0.8);
+      text-transform: uppercase;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+    }
+    .hud-footer {
+      position: absolute;
+      bottom: 22px;
+      left: 28px;
+      pointer-events: none;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .hud-hint {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.65);
+      background: rgba(10, 14, 22, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 4px 10px;
+      border-radius: 4px;
+      border-left: 2px solid #ff9dc4;
+      width: fit-content;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+    .season-badge {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      font-size: 13px;
+      letter-spacing: 0.2em;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(20, 24, 34, 0.65);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #ffd1e3;
+      z-index: 10;
+      pointer-events: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      transition: all 0.5s ease;
+    }
+    /* lil-gui custom styling */
+    .lil-gui {
+      --background-color: rgba(16, 20, 29, 0.85) !important;
+      --text-color: #e5e7eb !important;
+      --title-background-color: rgba(25, 30, 42, 0.95) !important;
+      --widget-color: rgba(45, 52, 68, 0.7) !important;
+      --hover-color: rgba(65, 75, 98, 0.8) !important;
+      --focus-color: #ff9dc4 !important;
+      --number-color: #ffc2db !important;
+      --string-color: #a7f3d0 !important;
+      font-family: inherit !important;
+      border-radius: 8px !important;
+      overflow: hidden !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+    }
+    .lil-gui .title {
+      font-weight: 500 !important;
+      letter-spacing: 0.1em !important;
+    }
+    @media (max-width: 768px) {
+      .hud-header { top: 16px; left: 16px; }
+      .hud-title-cn { font-size: 18px; }
+      .hud-footer { bottom: 16px; left: 16px; max-width: calc(100% - 32px); }
+      .season-badge { display: none; }
+      .lil-gui {
+        max-width: 240px !important;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="loading-overlay">
+    <div class="loader-symbol"></div>
+    <div class="loading-title">春華秋實 · 四季流轉</div>
+    <div class="loading-subtitle">Cultivating the ancient Chinese blossom tree...</div>
+  </div>
+
+  <div class="hud-header">
+    <div class="hud-title-cn">桃花源</div>
+    <div class="hud-subtitle-en">Chinese Blossom Sanctuary · 3D PBR</div>
+  </div>
+
+  <div class="season-badge" id="season-indicator">🌸 SPRING · 春</div>
+
+  <div class="hud-footer">
+    <div class="hud-hint">🖱️ Drag to orbit · Scroll / pinch to zoom · Click tree for petal burst</div>
+    <div class="hud-hint">⌨️ Keys [1] Spring [2] Summer [3] Autumn [4] Winter · [Space] Auto-rotate</div>
+  </div>
+
+  <canvas id="webgl-canvas"></canvas>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { Sky } from 'three/addons/objects/Sky.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { GUI } from 'three/addons/libs/lil-gui.module.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+    import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+    // ==========================================
+    // 1. CONFIGURATION & STATE
+    // ==========================================
+    const CONFIG = {
+      season: 'Spring',       // 'Spring', 'Summer', 'Autumn', 'Winter'
+      timeOfDay: 14.5,        // 0 to 24 hours
+      windStrength: 0.8,      // 0 to 2
+      canopyDensity: 1.0,     // 0 to 1
+      autoRotate: true,
+      autoRotateSpeed: 0.4,
+      quality: 'High',        // 'Low', 'Medium', 'High'
+      bloomEnabled: true,
+      cameraPreset: 'Cinematic'
+    };
+
+    const QUALITY_SETTINGS = {
+      Low: {
+        dpr: 1.0,
+        shadowMapSize: 1024,
+        particleCount: 450,
+        canopyCountMultiplier: 0.5,
+        bloom: false
+      },
+      Medium: {
+        dpr: 1.5,
+        shadowMapSize: 2048,
+        particleCount: 850,
+        canopyCountMultiplier: 0.8,
+        bloom: true
+      },
+      High: {
+        dpr: 2.0,
+        shadowMapSize: 2048,
+        particleCount: 1400,
+        canopyCountMultiplier: 1.0,
+        bloom: true
+      }
+    };
+
+    const SEASON_PALETTES = {
+      Spring: {
+        badge: '🌸 SPRING · 春',
+        badgeColor: '#ffd1e3',
+        groundBase: '#4a6b32',
+        groundAccent: '#6f8f4a',
+        groundPetalTint: '#ffb3cf',
+        foliageColors: [
+          new THREE.Color('#ffe8f0'),
+          new THREE.Color('#ffc2db'),
+          new THREE.Color('#ff9dc4'),
+          new THREE.Color('#ff7ea9'),
+          new THREE.Color('#ffffff')
+        ],
+        canopyScale: 1.0,
+        leafScale: 1.0,
+        sunIntensityMult: 1.0,
+        skyTurbidity: 3.0,
+        skyRayleigh: 1.5,
+        fogDensity: 0.012
+      },
+      Summer: {
+        badge: '🍃 SUMMER · 夏',
+        badgeColor: '#a7f3d0',
+        groundBase: '#254a1a',
+        groundAccent: '#3b7027',
+        groundPetalTint: '#2b521e',
+        foliageColors: [
+          new THREE.Color('#2d6a26'),
+          new THREE.Color('#3e8c33'),
+          new THREE.Color('#1c4d16'),
+          new THREE.Color('#5da64c'),
+          new THREE.Color('#6fb85e')
+        ],
+        canopyScale: 1.05,
+        leafScale: 1.15,
+        sunIntensityMult: 1.25,
+        skyTurbidity: 4.0,
+        skyRayleigh: 2.0,
+        fogDensity: 0.009
+      },
+      Autumn: {
+        badge: '🍁 AUTUMN · 秋',
+        badgeColor: '#fdba74',
+        groundBase: '#5c4826',
+        groundAccent: '#7a5a2e',
+        groundPetalTint: '#b84e1b',
+        foliageColors: [
+          new THREE.Color('#d84315'),
+          new THREE.Color('#e65100'),
+          new THREE.Color('#ff8f00'),
+          new THREE.Color('#b71c1c'),
+          new THREE.Color('#e67e22')
+        ],
+        canopyScale: 0.95,
+        leafScale: 1.0,
+        sunIntensityMult: 0.9,
+        skyTurbidity: 4.5,
+        skyRayleigh: 2.5,
+        fogDensity: 0.015
+      },
+      Winter: {
+        badge: '❄️ WINTER · 冬',
+        badgeColor: '#bfdbfe',
+        groundBase: '#e4ecf7',
+        groundAccent: '#c8d7eb',
+        groundPetalTint: '#f5f9ff',
+        foliageColors: [
+          new THREE.Color('#dbe7f5'),
+          new THREE.Color('#eaf2fc'),
+          new THREE.Color('#ffffff'),
+          new THREE.Color('#c3d7ee'),
+          new THREE.Color('#b0c8e3')
+        ],
+        canopyScale: 0.15, // Sparse snow frost on outer twigs
+        leafScale: 0.35,
+        sunIntensityMult: 0.75,
+        skyTurbidity: 2.0,
+        skyRayleigh: 0.9,
+        fogDensity: 0.02
+      }
+    };
+
+    // ==========================================
+    // 2. RENDERER, SCENE, CAMERA
+    // ==========================================
+    const canvas = document.getElementById('webgl-canvas');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY_SETTINGS[CONFIG.quality].dpr));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(6, 4, 8);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 2.5;
+    controls.maxDistance = 22.0;
+    controls.maxPolarAngle = Math.PI * 0.485;
+    controls.target.set(0, 2.3, 0);
+    controls.autoRotate = CONFIG.autoRotate;
+    controls.autoRotateSpeed = CONFIG.autoRotateSpeed;
+
+    // ==========================================
+    // 3. ENVIRONMENT & LIGHTING
+    // ==========================================
+    // PBR PMREM Environment
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnv = new RoomEnvironment();
+    scene.environment = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+    pmremGenerator.dispose();
+
+    // Atmospheric Fog
+    scene.fog = new THREE.FogExp2('#d5e2ec', 0.012);
+
+    // Sky
+    const sky = new Sky();
+    sky.scale.setScalar(400000);
+    scene.add(sky);
+
+    const sunPosition = new THREE.Vector3();
+
+    // Directional Sun / Moon
+    const sunLight = new THREE.DirectionalLight('#ffffff', 3.0);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = QUALITY_SETTINGS[CONFIG.quality].shadowMapSize;
+    sunLight.shadow.mapSize.height = QUALITY_SETTINGS[CONFIG.quality].shadowMapSize;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 35;
+    const shadowD = 6.5;
+    sunLight.shadow.camera.left = -shadowD;
+    sunLight.shadow.camera.right = shadowD;
+    sunLight.shadow.camera.top = shadowD + 2;
+    sunLight.shadow.camera.bottom = -shadowD;
+    sunLight.shadow.bias = -0.00025;
+    sunLight.shadow.normalBias = 0.025;
+    scene.add(sunLight);
+
+    // Hemisphere Light (sky/ground bounce)
+    const hemiLight = new THREE.HemisphereLight('#cbe2fb', '#556942', 1.0);
+    scene.add(hemiLight);
+
+    // Subtle Fill Ambient Light for night softness
+    const ambientLight = new THREE.AmbientLight('#2a384c', 0.35);
+    scene.add(ambientLight);
+
+    // ==========================================
+    // 4. PROCEDURAL TEXTURE GENERATORS
+    // ==========================================
+    // Bark Texture (Rich vertical striations, grain, knots, moss patches)
+    function createBarkTextures() {
+      const size = 1024;
+      const canvasColor = document.createElement('canvas');
+      canvasColor.width = size;
+      canvasColor.height = size;
+      const ctx = canvasColor.getContext('2d');
+
+      // Base gradient
+      const grad = ctx.createLinearGradient(0, 0, size, 0);
+      grad.addColorStop(0.0, '#362820');
+      grad.addColorStop(0.3, '#45352c');
+      grad.addColorStop(0.7, '#2f231b');
+      grad.addColorStop(1.0, '#3a2b22');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, size, size);
+
+      // Vertical bark furrows and fibers
+      for (let i = 0; i < 4000; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const len = 30 + Math.random() * 140;
+        const alpha = 0.08 + Math.random() * 0.18;
+        const isDark = Math.random() > 0.45;
+        ctx.strokeStyle = isDark
+          ? `rgba(20, 14, 10, ${alpha})`
+          : `rgba(100, 80, 68, ${alpha * 0.9})`;
+        ctx.lineWidth = 1 + Math.random() * 3.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        // Slight organic wave
+        ctx.bezierCurveTo(
+          x + (Math.random() - 0.5) * 8, y + len * 0.33,
+          x + (Math.random() - 0.5) * 12, y + len * 0.66,
+          x + (Math.random() - 0.5) * 6, y + len
+        );
+        ctx.stroke();
+      }
+
+      // Lichen & subtle moss dapples
+      for (let m = 0; m < 240; m++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 2 + Math.random() * 12;
+        const mossGrad = ctx.createRadialGradient(x, y, 0, x, y, r);
+        mossGrad.addColorStop(0, 'rgba(88, 102, 65, 0.45)');
+        mossGrad.addColorStop(1, 'rgba(60, 72, 45, 0)');
+        ctx.fillStyle = mossGrad;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Roughness / Bump map
+      const canvasBump = document.createElement('canvas');
+      canvasBump.width = 512;
+      canvasBump.height = 512;
+      const bCtx = canvasBump.getContext('2d');
+      bCtx.fillStyle = '#808080';
+      bCtx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 2000; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const len = 20 + Math.random() * 100;
+        const val = Math.random() > 0.5 ? 255 : 0;
+        bCtx.strokeStyle = `rgba(${val}, ${val}, ${val}, ${0.1 + Math.random() * 0.15})`;
+        bCtx.lineWidth = 1 + Math.random() * 3;
+        bCtx.beginPath();
+        bCtx.moveTo(x, y);
+        bCtx.lineTo(x + (Math.random() - 0.5) * 6, y + len);
+        bCtx.stroke();
+      }
+
+      const colorMap = new THREE.CanvasTexture(canvasColor);
+      colorMap.wrapS = THREE.RepeatWrapping;
+      colorMap.wrapT = THREE.RepeatWrapping;
+      colorMap.repeat.set(2, 6);
+      colorMap.colorSpace = THREE.SRGBColorSpace;
+
+      const bumpMap = new THREE.CanvasTexture(canvasBump);
+      bumpMap.wrapS = THREE.RepeatWrapping;
+      bumpMap.wrapT = THREE.RepeatWrapping;
+      bumpMap.repeat.set(2, 6);
+
+      return { colorMap, bumpMap };
+    }
+
+    // Petal & Leaf Texture Generator (Paper-like translucency & delicate vein patterns)
+    function createPetalTexture() {
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, size, size);
+
+      // Petal silhouette path
+      ctx.save();
+      ctx.translate(size / 2, size * 0.85);
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      // Left curve
+      ctx.bezierCurveTo(-size * 0.45, -size * 0.25, -size * 0.48, -size * 0.72, 0, -size * 0.8);
+      // Right curve
+      ctx.bezierCurveTo(size * 0.48, -size * 0.72, size * 0.45, -size * 0.25, 0, 0);
+      ctx.closePath();
+
+      // Soft paper-like gradient
+      const petalGrad = ctx.createRadialGradient(0, -size * 0.4, 10, 0, -size * 0.4, size * 0.5);
+      petalGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.98)');
+      petalGrad.addColorStop(0.4, 'rgba(255, 225, 235, 0.92)');
+      petalGrad.addColorStop(0.8, 'rgba(255, 185, 210, 0.88)');
+      petalGrad.addColorStop(1.0, 'rgba(255, 160, 192, 0.78)');
+      ctx.fillStyle = petalGrad;
+      ctx.fill();
+
+      // Fine delicate veins
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(255, 140, 175, 0.35)';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -size * 0.75);
+      ctx.stroke();
+
+      for (let v = 1; v <= 5; v++) {
+        const vy = -size * (0.15 + v * 0.11);
+        ctx.beginPath();
+        ctx.moveTo(0, vy);
+        ctx.quadraticCurveTo(-size * 0.15, vy - 15, -size * 0.32, vy - 3);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, vy);
+        ctx.quadraticCurveTo(size * 0.15, vy - 15, size * 0.32, vy - 3);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    // Ground Texture Generator (Organic earth, grass dapples, radial tree base darkening)
+    function createGroundTexture(season) {
+      const size = 1024;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      const palette = SEASON_PALETTES[season];
+
+      // Base fill
+      ctx.fillStyle = palette.groundBase;
+      ctx.fillRect(0, 0, size, size);
+
+      // Noise dapples and grass flecks
+      for (let i = 0; i < 7000; i++) {
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 2 + Math.random() * 8;
+        ctx.fillStyle = Math.random() > 0.5 ? palette.groundAccent : palette.groundBase;
+        ctx.globalAlpha = 0.25 + Math.random() * 0.35;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Fallen petals / leaves / snow flecks
+      ctx.globalAlpha = 0.75;
+      for (let p = 0; p < 900; p++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 50 + Math.random() * (size * 0.44);
+        const px = size / 2 + Math.cos(angle) * dist;
+        const py = size / 2 + Math.sin(angle) * dist;
+        ctx.fillStyle = palette.groundPetalTint;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(Math.random() * Math.PI);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 2 + Math.random() * 3, 1 + Math.random() * 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Radial base ambient occlusion / contact shadow under tree
+      ctx.globalAlpha = 1.0;
+      const aoGrad = ctx.createRadialGradient(size / 2, size / 2, 10, size / 2, size / 2, size * 0.48);
+      aoGrad.addColorStop(0.0, 'rgba(10, 14, 18, 0.75)');
+      aoGrad.addColorStop(0.2, 'rgba(15, 20, 24, 0.45)');
+      aoGrad.addColorStop(0.5, 'rgba(20, 28, 32, 0.15)');
+      aoGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+      ctx.fillStyle = aoGrad;
+      ctx.fillRect(0, 0, size, size);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    }
+
+    const barkTextures = createBarkTextures();
+    const petalTexture = createPetalTexture();
+
+    // ==========================================
+    // 5. GROUND CREATION
+    // ==========================================
+    const groundGeom = new THREE.CylinderGeometry(8.5, 9.2, 0.5, 64);
+    // Subtle organic mound shaping
+    const posAttr = groundGeom.attributes.position;
+    for (let i = 0; i < posAttr.count; i++) {
+      const y = posAttr.getY(i);
+      if (y > 0) {
+        const x = posAttr.getX(i);
+        const z = posAttr.getZ(i);
+        const distFromCenter = Math.sqrt(x * x + z * z);
+        // Mound elevation peaking around tree base
+        const mound = Math.max(0, 1 - distFromCenter / 8.5);
+        const noise = (Math.sin(x * 1.5) * Math.cos(z * 1.5)) * 0.08;
+        posAttr.setY(i, y + Math.pow(mound, 1.8) * 0.45 + noise);
+      }
+    }
+    groundGeom.computeVertexNormals();
+
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      map: createGroundTexture(CONFIG.season),
+      roughness: 0.88,
+      metalness: 0.02
+    });
+    const groundMesh = new THREE.Mesh(groundGeom, groundMaterial);
+    groundMesh.position.y = -0.25;
+    groundMesh.receiveShadow = true;
+    scene.add(groundMesh);
+
+    // ==========================================
+    // 6. TREE GENERATION (Classical Chinese Form)
+    // ==========================================
+    // Creates an elegant sweeping bonsai / penjing trunk with recursive tapering branches
+    const branchGeometries = [];
+    const twigAnchorPoints = []; // Stores branch endpoints for blossom/leaf canopy
+
+    function createCurvedBranch(start, end, ctrl1, ctrl2, radiusStart, radiusEnd, radialSegments = 8) {
+      const curve = new THREE.CubicBezierCurve3(start, end, ctrl1, ctrl2);
+      const points = curve.getPoints(12);
+
+      // Create a tapered cylinder extrusion along curve
+      const frames = curve.computeFrenetFrames(12, false);
+      const geom = new THREE.BufferGeometry();
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+      const indices = [];
+
+      for (let i = 0; i <= 12; i++) {
+        const t = i / 12;
+        const radius = THREE.MathUtils.lerp(radiusStart, radiusEnd, t);
+        const p = points[i];
+        const normal = frames.normals[i];
+        const binormal = frames.binormals[i];
+
+        for (let j = 0; j <= radialSegments; j++) {
+          const v = j / radialSegments;
+          const angle = v * Math.PI * 2;
+          const sin = Math.sin(angle);
+          const cos = Math.cos(angle);
+
+          // normal circle
+          const nx = cos * normal.x + sin * binormal.x;
+          const ny = cos * normal.y + sin * binormal.y;
+          const nz = cos * normal.z + sin * binormal.z;
+
+          vertices.push(p.x + nx * radius, p.y + ny * radius, p.z + nz * radius);
+          normals.push(nx, ny, nz);
+          uvs.push(v * 2, t * 4);
+        }
+      }
+
+      for (let i = 0; i < 12; i++) {
+        for (let j = 0; j < radialSegments; j++) {
+          const a = i * (radialSegments + 1) + j;
+          const b = (i + 1) * (radialSegments + 1) + j;
+          const c = (i + 1) * (radialSegments + 1) + (j + 1);
+          const d = i * (radialSegments + 1) + (j + 1);
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+
+      geom.setIndex(indices);
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      return geom;
+    }
+
+    // Build Trunk and Branches
+    function generateChineseTree() {
+      // 1. Root flare buttresses
+      for (let r = 0; r < 5; r++) {
+        const angle = (r / 5) * Math.PI * 2 + Math.random() * 0.4;
+        const rx = Math.cos(angle) * 0.9;
+        const rz = Math.sin(angle) * 0.9;
+        const rootGeom = createCurvedBranch(
+          new THREE.Vector3(rx, 0, rz),
+          new THREE.Vector3(rx * 0.35, 0.6, rz * 0.35),
+          new THREE.Vector3(rx * 0.7, 0.1, rz * 0.7),
+          new THREE.Vector3(rx * 0.45, 0.35, rz * 0.45),
+          0.18, 0.28, 6
+        );
+        branchGeometries.push(rootGeom);
+      }
+
+      // 2. Main Trunk with classical scholar curve
+      const p0 = new THREE.Vector3(0, 0, 0);
+      const p1 = new THREE.Vector3(0.3, 1.2, 0.2);
+      const c0 = new THREE.Vector3(-0.15, 0.4, -0.1);
+      const c1 = new THREE.Vector3(0.25, 0.8, 0.15);
+      branchGeometries.push(createCurvedBranch(p0, p1, c0, c1, 0.42, 0.32, 10));
+
+      const p2 = new THREE.Vector3(-0.2, 2.3, -0.1);
+      const c2 = new THREE.Vector3(0.4, 1.6, 0.25);
+      const c3 = new THREE.Vector3(0.1, 2.0, 0.05);
+      branchGeometries.push(createCurvedBranch(p1, p2, c2, c3, 0.32, 0.24, 10));
+
+      // 3. Primary Scaffold Limbs (Spreading, twisting, graceful)
+      const primaryLimbs = [
+        {
+          start: p2,
+          end: new THREE.Vector3(-1.8, 3.1, 0.6),
+          c1: new THREE.Vector3(-0.8, 2.6, 0.2),
+          c2: new THREE.Vector3(-1.4, 2.8, 0.5),
+          rStart: 0.19, rEnd: 0.11
+        },
+        {
+          start: p2,
+          end: new THREE.Vector3(1.7, 3.2, -0.4),
+          c1: new THREE.Vector3(0.6, 2.6, 0.0),
+          c2: new THREE.Vector3(1.3, 2.9, -0.3),
+          rStart: 0.18, rEnd: 0.11
+        },
+        {
+          start: p2,
+          end: new THREE.Vector3(0.2, 3.7, 1.6),
+          c1: new THREE.Vector3(-0.1, 2.8, 0.5),
+          c2: new THREE.Vector3(0.1, 3.3, 1.2),
+          rStart: 0.16, rEnd: 0.09
+        },
+        {
+          start: p2,
+          end: new THREE.Vector3(-0.3, 3.9, -1.5),
+          c1: new THREE.Vector3(-0.2, 2.9, -0.6),
+          c2: new THREE.Vector3(-0.3, 3.5, -1.1),
+          rStart: 0.17, rEnd: 0.10
+        },
+        {
+          start: p2,
+          end: new THREE.Vector3(0.5, 4.4, 0.2),
+          c1: new THREE.Vector3(0.0, 3.1, 0.1),
+          c2: new THREE.Vector3(0.3, 3.8, 0.15),
+          rStart: 0.17, rEnd: 0.09
+        }
+      ];
+
+      primaryLimbs.forEach((limb) => {
+        branchGeometries.push(createCurvedBranch(limb.start, limb.end, limb.c1, limb.c2, limb.rStart, limb.rEnd, 8));
+
+        // Secondary Branches per primary limb
+        const branchCount = 3 + Math.floor(Math.random() * 2);
+        for (let b = 0; b < branchCount; b++) {
+          const t = 0.4 + (b / branchCount) * 0.6;
+          const subStart = new THREE.Vector3().lerpVectors(limb.start, limb.end, t);
+          const spreadDir = new THREE.Vector3(
+            (Math.random() - 0.5) * 2.2,
+            0.2 + Math.random() * 0.8,
+            (Math.random() - 0.5) * 2.2
+          ).normalize();
+
+          const subLen = 1.0 + Math.random() * 0.9;
+          const subEnd = subStart.clone().addScaledVector(spreadDir, subLen);
+          const sc1 = subStart.clone().addScaledVector(spreadDir, subLen * 0.35).add(new THREE.Vector3(0, 0.2, 0));
+          const sc2 = subStart.clone().addScaledVector(spreadDir, subLen * 0.7).add(new THREE.Vector3(0, 0.1, 0));
+
+          branchGeometries.push(createCurvedBranch(subStart, subEnd, sc1, sc2, limb.rEnd * 0.85, 0.05, 6));
+
+          // Tertiary Twigs (Canopy anchor points)
+          const twigCount = 3 + Math.floor(Math.random() * 3);
+          for (let tw = 0; tw < twigCount; tw++) {
+            const twT = 0.3 + (tw / twigCount) * 0.7;
+            const twStart = new THREE.Vector3().lerpVectors(subStart, subEnd, twT);
+            const twSpread = new THREE.Vector3(
+              (Math.random() - 0.5) * 1.8,
+              0.1 + Math.random() * 0.7,
+              (Math.random() - 0.5) * 1.8
+            ).normalize();
+            const twLen = 0.5 + Math.random() * 0.6;
+            const twEnd = twStart.clone().addScaledVector(twSpread, twLen);
+
+            const tc1 = twStart.clone().addScaledVector(twSpread, twLen * 0.4);
+            const tc2 = twStart.clone().addScaledVector(twSpread, twLen * 0.8);
+
+            branchGeometries.push(createCurvedBranch(twStart, twEnd, tc1, tc2, 0.04, 0.02, 5));
+
+            // Record anchor position & direction for dense flower clusters
+            twigAnchorPoints.push({
+              pos: twEnd.clone(),
+              dir: twSpread.clone()
+            });
+          }
+        }
+      });
+    }
+
+    generateChineseTree();
+
+    // Merge Branch Geometries for single draw-call performance
+    const mergedTreeGeometry = BufferGeometryUtils.mergeGeometries(branchGeometries, false);
+    branchGeometries.forEach((g) => g.dispose());
+
+    const barkMaterial = new THREE.MeshStandardMaterial({
+      map: barkTextures.colorMap,
+      bumpMap: barkTextures.bumpMap,
+      bumpScale: 0.035,
+      roughness: 0.86,
+      metalness: 0.04
+    });
+
+    const treeMesh = new THREE.Mesh(mergedTreeGeometry, barkMaterial);
+    treeMesh.castShadow = true;
+    treeMesh.receiveShadow = true;
+    scene.add(treeMesh);
+
+    // ==========================================
+    // 7. CANOPY / BLOSSOM / LEAF INSTANCING
+    // ==========================================
+    // Double-sided slightly curved petal geometry
+    const petalPlaneGeom = new THREE.PlaneGeometry(0.18, 0.22, 2, 2);
+    // Add subtle curvature so petals catch light at multiple angles
+    const petPos = petalPlaneGeom.attributes.position;
+    for (let i = 0; i < petPos.count; i++) {
+      const z = Math.sin(petPos.getX(i) * 12) * 0.03;
+      petPos.setZ(i, z);
+    }
+    petalPlaneGeom.computeVertexNormals();
+
+    const petalMaterial = new THREE.MeshStandardMaterial({
+      map: petalTexture,
+      transparent: true,
+      alphaTest: 0.15,
+      depthWrite: true,
+      side: THREE.DoubleSide,
+      roughness: 0.72,
+      metalness: 0.02
+    });
+
+    const MAX_CANOPY_INSTANCES = 5200;
+    const canopyMesh = new THREE.InstancedMesh(petalPlaneGeom, petalMaterial, MAX_CANOPY_INSTANCES);
+    canopyMesh.castShadow = true;
+    canopyMesh.receiveShadow = true;
+
+    // Cache initial instance transform components for gentle wind swaying & seasonal scaling
+    const canopyInstanceData = [];
+    const dummy = new THREE.Object3D();
+    const tempColor = new THREE.Color();
+
+    let instanceIdx = 0;
+    const numAnchors = twigAnchorPoints.length;
+    const instancesPerAnchor = Math.floor(MAX_CANOPY_INSTANCES / numAnchors);
+
+    twigAnchorPoints.forEach((anchor) => {
+      for (let k = 0; k < instancesPerAnchor && instanceIdx < MAX_CANOPY_INSTANCES; k++) {
+        // Organic dome cluster distribution around twig tips
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        const clusterRadius = 0.08 + Math.random() * 0.42;
+
+        const offset = new THREE.Vector3(
+          Math.sin(phi) * Math.cos(theta) * clusterRadius * 1.2,
+          (Math.cos(phi) * 0.8 + 0.3) * clusterRadius,
+          Math.sin(phi) * Math.sin(theta) * clusterRadius * 1.2
+        );
+
+        const pos = anchor.pos.clone().add(offset);
+        const rot = new THREE.Euler(
+          (Math.random() - 0.5) * Math.PI * 1.5,
+          (Math.random() - 0.5) * Math.PI * 2,
+          (Math.random() - 0.5) * Math.PI * 1.5
+        );
+        const baseScale = 0.75 + Math.random() * 0.5;
+
+        dummy.position.copy(pos);
+        dummy.rotation.copy(rot);
+        dummy.scale.set(baseScale, baseScale, baseScale);
+        dummy.updateMatrix();
+
+        canopyMesh.setMatrixAt(instanceIdx, dummy.matrix);
+
+        // Pick initial seasonal color
+        const pal = SEASON_PALETTES[CONFIG.season].foliageColors;
+        const col = pal[Math.floor(Math.random() * pal.length)];
+        canopyMesh.setColorAt(instanceIdx, col);
+
+        canopyInstanceData.push({
+          basePos: pos.clone(),
+          baseRot: rot.clone(),
+          baseScale,
+          seed: Math.random() * 100,
+          currentScale: baseScale
+        });
+
+        instanceIdx++;
+      }
+    });
+
+    canopyMesh.count = instanceIdx;
+    canopyMesh.instanceMatrix.needsUpdate = true;
+    if (canopyMesh.instanceColor) canopyMesh.instanceColor.needsUpdate = true;
+    scene.add(canopyMesh);
+
+    // ==========================================
+    // 8. FALLING SEASONAL PARTICLES
+    // ==========================================
+    // Use an InstancedMesh with petal geometry for rich realistic fluttering
+    const MAX_PARTICLES = 1600;
+    const particleGeom = new THREE.PlaneGeometry(0.12, 0.15);
+    const particleMat = new THREE.MeshStandardMaterial({
+      map: petalTexture,
+      transparent: true,
+      alphaTest: 0.12,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      roughness: 0.7,
+      metalness: 0.05
+    });
+
+    const particlesMesh = new THREE.InstancedMesh(particleGeom, particleMat, MAX_PARTICLES);
+    scene.add(particlesMesh);
+
+    const particleList = [];
+
+    function resetParticle(p, fullReset = false) {
+      // Spawn in bounding canopy space above tree
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * 3.2;
+      p.x = Math.cos(angle) * radius;
+      p.y = fullReset ? (0.5 + Math.random() * 5.5) : (4.5 + Math.random() * 2.2);
+      p.z = Math.sin(angle) * radius;
+
+      p.vx = (Math.random() - 0.5) * 0.3;
+      p.vy = -(0.35 + Math.random() * 0.45);
+      p.vz = (Math.random() - 0.5) * 0.3;
+
+      p.rotX = Math.random() * Math.PI * 2;
+      p.rotY = Math.random() * Math.PI * 2;
+      p.rotZ = Math.random() * Math.PI * 2;
+
+      p.spinX = (Math.random() - 0.5) * 3.5;
+      p.spinY = (Math.random() - 0.5) * 2.5;
+      p.spinZ = (Math.random() - 0.5) * 4.0;
+
+      p.wobblePhase = Math.random() * Math.PI * 2;
+      p.wobbleSpeed = 2.0 + Math.random() * 3.0;
+
+      p.scale = 0.6 + Math.random() * 0.6;
+      p.isFirefly = CONFIG.season === 'Summer' && (CONFIG.timeOfDay > 19.5 || CONFIG.timeOfDay < 4.8) && Math.random() < 0.25;
+    }
+
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      const p = {
+        x: 0, y: 0, z: 0,
+        vx: 0, vy: 0, vz: 0,
+        rotX: 0, rotY: 0, rotZ: 0,
+        spinX: 0, spinY: 0, spinZ: 0,
+        wobblePhase: 0, wobbleSpeed: 0,
+        scale: 1, isFirefly: false
+      };
+      resetParticle(p, true);
+      particleList.push(p);
+
+      // Color
+      const pal = SEASON_PALETTES[CONFIG.season].foliageColors;
+      particlesMesh.setColorAt(i, pal[Math.floor(Math.random() * pal.length)]);
+    }
+
+    const activeParticleCount = QUALITY_SETTINGS[CONFIG.quality].particleCount;
+    particlesMesh.count = activeParticleCount;
+    particlesMesh.instanceMatrix.needsUpdate = true;
+    if (particlesMesh.instanceColor) particlesMesh.instanceColor.needsUpdate = true;
+
+    // Burst particles for interactive raycasting
+    const burstParticles = [];
+    const MAX_BURST = 120;
+    const burstMesh = new THREE.InstancedMesh(particleGeom, particleMat, MAX_BURST);
+    burstMesh.count = 0;
+    scene.add(burstMesh);
+
+    // ==========================================
+    // 9. POSTPROCESSING (Subtle Cinematic Bloom)
+    // ==========================================
+    const renderPass = new RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(width, height),
+      0.22, // strength
+      0.65, // radius
+      0.85  // threshold
+    );
+    const outputPass = new OutputPass();
+
+    const composer = new EffectComposer(renderer);
+    composer.addPass(renderPass);
+    composer.addPass(bloomPass);
+    composer.addPass(outputPass);
+
+    // ==========================================
+    // 10. TIME OF DAY & SEASON UPDATE LOGIC
+    // ==========================================
+    function updateEnvironmentState() {
+      const time = CONFIG.timeOfDay;
+      const seasonInfo = SEASON_PALETTES[CONFIG.season];
+
+      // Sun angle calculation (Sun rises at 6am, peaks at 12pm, sets at 18pm)
+      // Height angle: -pi/2 to pi/2
+      const elevation = Math.sin(((time - 6) / 12) * Math.PI);
+      const azimuth = ((time - 6) / 12) * Math.PI;
+
+      const sunDist = 30;
+      sunPosition.x = Math.cos(azimuth) * sunDist;
+      sunPosition.y = Math.max(-10, elevation * sunDist);
+      sunPosition.z = Math.sin(azimuth * 0.8) * (sunDist * 0.6);
+
+      sunLight.position.copy(sunPosition);
+
+      // Sky Uniforms
+      const skyUniforms = sky.material.uniforms;
+      skyUniforms['turbidity'].value = seasonInfo.skyTurbidity;
+      skyUniforms['rayleigh'].value = seasonInfo.skyRayleigh;
+      skyUniforms['mieCoefficient'].value = 0.005;
+      skyUniforms['mieDirectionalG'].value = 0.8;
+      skyUniforms['sunPosition'].value.copy(sunPosition);
+
+      // Lighting Colors & Intensity based on time
+      const isDay = time >= 5.5 && time <= 18.5;
+      const isDawnDusk = (time >= 5.2 && time <= 7.2) || (time >= 16.8 && time <= 18.8);
+
+      let sunCol = new THREE.Color();
+      let sunIntensity = 0;
+      let hemiSkyCol = new THREE.Color();
+      let hemiGroundCol = new THREE.Color();
+      let fogCol = new THREE.Color();
+
+      if (isDawnDusk) {
+        // Warm golden hour / sunrise / sunset
+        sunCol.set('#ff8a4c');
+        sunIntensity = 2.4 * seasonInfo.sunIntensityMult;
+        hemiSkyCol.set('#f4a261');
+        hemiGroundCol.set('#4a3b2c');
+        fogCol.set('#d89b7b');
+        renderer.toneMappingExposure = 1.05;
+        bloomPass.strength = 0.28;
+      } else if (isDay) {
+        // High neutral daylight
+        sunCol.set('#fffbf0');
+        sunIntensity = 3.2 * seasonInfo.sunIntensityMult;
+        hemiSkyCol.set('#d0e5fb');
+        hemiGroundCol.set('#485e3a');
+        fogCol.set('#cce0f0');
+        renderer.toneMappingExposure = 1.0;
+        bloomPass.strength = 0.18;
+      } else {
+        // Ethereal Night / Moonlight
+        sunCol.set('#6a8cb8');
+        sunIntensity = 0.85; // Cool moon glow
+        hemiSkyCol.set('#17223b');
+        hemiGroundCol.set('#0b101d');
+        fogCol.set('#0d1422');
+        renderer.toneMappingExposure = 0.88;
+        bloomPass.strength = 0.22;
+      }
+
+      // Winter adjustments
+      if (CONFIG.season === 'Winter') {
+        fogCol.lerp(new THREE.Color('#d4e2f2'), 0.5);
+        hemiGroundCol.set('#b4c8de');
+      }
+
+      sunLight.color.copy(sunCol);
+      sunLight.intensity = sunIntensity;
+      hemiLight.color.copy(hemiSkyCol);
+      hemiLight.groundColor.copy(hemiGroundCol);
+      scene.fog.color.copy(fogCol);
+      scene.fog.density = seasonInfo.fogDensity;
+
+      // Update season badge UI
+      const badgeElem = document.getElementById('season-indicator');
+      if (badgeElem) {
+        badgeElem.textContent = seasonInfo.badge;
+        badgeElem.style.color = seasonInfo.badgeColor;
+      }
+    }
+
+    function applySeasonChange() {
+      const palette = SEASON_PALETTES[CONFIG.season];
+
+      // 1. Update ground texture
+      groundMaterial.map.dispose();
+      groundMaterial.map = createGroundTexture(CONFIG.season);
+      groundMaterial.needsUpdate = true;
+
+      // 2. Smoothly transition canopy colors & scales
+      const colors = palette.foliageColors;
+      for (let i = 0; i < canopyInstanceData.length; i++) {
+        const item = canopyInstanceData[i];
+        const chosenCol = colors[Math.floor(Math.random() * colors.length)];
+        canopyMesh.setColorAt(i, chosenCol);
+
+        // Adjust scale for winter / summer / spring
+        const targetScale = item.baseScale * palette.canopyScale * CONFIG.canopyDensity;
+        dummy.position.copy(item.basePos);
+        dummy.rotation.copy(item.baseRot);
+        dummy.scale.set(targetScale, targetScale, targetScale);
+        dummy.updateMatrix();
+        canopyMesh.setMatrixAt(i, dummy.matrix);
+      }
+      canopyMesh.instanceMatrix.needsUpdate = true;
+      if (canopyMesh.instanceColor) canopyMesh.instanceColor.needsUpdate = true;
+
+      // 3. Update particle colors
+      for (let i = 0; i < particleList.length; i++) {
+        resetParticle(particleList[i], false);
+        const pCol = colors[Math.floor(Math.random() * colors.length)];
+        particlesMesh.setColorAt(i, pCol);
+      }
+      if (particlesMesh.instanceColor) particlesMesh.instanceColor.needsUpdate = true;
+
+      updateEnvironmentState();
+    }
+
+    function applyQualityPreset(qName) {
+      CONFIG.quality = qName;
+      const q = QUALITY_SETTINGS[qName];
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.dpr));
+      sunLight.shadow.mapSize.width = q.shadowMapSize;
+      sunLight.shadow.mapSize.height = q.shadowMapSize;
+      if (sunLight.shadow.map) {
+        sunLight.shadow.map.dispose();
+        sunLight.shadow.map = null;
+      }
+      particlesMesh.count = q.particleCount;
+      CONFIG.bloomEnabled = q.bloom;
+      composer.passes[1].enabled = CONFIG.bloomEnabled;
+    }
+
+    // ==========================================
+    // 11. RAYCASTER CLICK BURST
+    // ==========================================
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    function triggerBurstAt(pos) {
+      const palette = SEASON_PALETTES[CONFIG.season].foliageColors;
+      const count = 40;
+      burstParticles.length = 0;
+
+      for (let i = 0; i < count; i++) {
+        const bp = {
+          pos: pos.clone(),
+          vel: new THREE.Vector3(
+            (Math.random() - 0.5) * 2.8,
+            0.8 + Math.random() * 2.2,
+            (Math.random() - 0.5) * 2.8
+          ),
+          rot: new THREE.Euler(Math.random() * Math.PI, Math.random() * Math.PI, 0),
+          spin: new THREE.Vector3((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8),
+          scale: 0.8 + Math.random() * 0.5,
+          life: 1.0,
+          decay: 0.35 + Math.random() * 0.3
+        };
+        burstParticles.push(bp);
+
+        const col = palette[Math.floor(Math.random() * palette.length)];
+        burstMesh.setColorAt(i, col);
+      }
+      burstMesh.count = count;
+      if (burstMesh.instanceColor) burstMesh.instanceColor.needsUpdate = true;
+    }
+
+    function onPointerDown(event) {
+      // Ignore if clicking on GUI control
+      if (event.target.closest('.lil-gui')) return;
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects([treeMesh, canopyMesh], false);
+
+      if (intersects.length > 0) {
+        triggerBurstAt(intersects[0].point);
+      }
+    }
+    window.addEventListener('pointerdown', onPointerDown);
+
+    // ==========================================
+    // 12. CAMERA PRESETS & GUI
+    // ==========================================
+    function setCameraPreset(preset) {
+      CONFIG.cameraPreset = preset;
+      switch (preset) {
+        case 'Wide':
+          camera.position.set(9.5, 4.5, 11);
+          controls.target.set(0, 2.0, 0);
+          break;
+        case 'Close-up':
+          camera.position.set(2.4, 2.6, 2.6);
+          controls.target.set(0.4, 2.7, 0.2);
+          break;
+        case 'Top-down':
+          camera.position.set(0.1, 10.5, 3.5);
+          controls.target.set(0, 1.8, 0);
+          break;
+        case 'Cinematic':
+        default:
+          camera.position.set(6, 4, 8);
+          controls.target.set(0, 2.3, 0);
+          break;
+      }
+      controls.update();
+    }
+
+    const gui = new GUI({ title: 'Blossom Controls · 控制面板' });
+
+    gui.add(CONFIG, 'season', ['Spring', 'Summer', 'Autumn', 'Winter']).name('Season (季节)').onChange(() => {
+      applySeasonChange();
+    });
+
+    gui.add(CONFIG, 'timeOfDay', 0, 24, 0.1).name('Time of Day (时辰)').onChange(() => {
+      updateEnvironmentState();
+    });
+
+    gui.add(CONFIG, 'windStrength', 0, 2, 0.1).name('Wind Force (风力)');
+
+    gui.add(CONFIG, 'canopyDensity', 0.2, 1.0, 0.05).name('Canopy Density (茂密)').onChange(() => {
+      applySeasonChange();
+    });
+
+    gui.add(CONFIG, 'autoRotate').name('Auto Orbit (漫游旋转)').onChange((v) => {
+      controls.autoRotate = v;
+    });
+
+    gui.add(CONFIG, 'quality', ['Low', 'Medium', 'High']).name('Quality Preset (画质)').onChange((q) => {
+      applyQualityPreset(q);
+    });
+
+    gui.add(CONFIG, 'bloomEnabled').name('Cinematic Bloom (辉光)').onChange((v) => {
+      composer.passes[1].enabled = v;
+    });
+
+    gui.add(CONFIG, 'cameraPreset', ['Cinematic', 'Close-up', 'Wide', 'Top-down']).name('Camera View (视角)').onChange((p) => {
+      setCameraPreset(p);
+    });
+
+    // Auto collapse on small screens
+    if (window.innerWidth <= 768) {
+      gui.close();
+    }
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '1') {
+        CONFIG.season = 'Spring';
+        gui.controllers.find((c) => c.property === 'season')?.setValue('Spring');
+      } else if (e.key === '2') {
+        CONFIG.season = 'Summer';
+        gui.controllers.find((c) => c.property === 'season')?.setValue('Summer');
+      } else if (e.key === '3') {
+        CONFIG.season = 'Autumn';
+        gui.controllers.find((c) => c.property === 'season')?.setValue('Autumn');
+      } else if (e.key === '4') {
+        CONFIG.season = 'Winter';
+        gui.controllers.find((c) => c.property === 'season')?.setValue('Winter');
+      } else if (e.code === 'Space') {
+        CONFIG.autoRotate = !CONFIG.autoRotate;
+        controls.autoRotate = CONFIG.autoRotate;
+        gui.controllers.find((c) => c.property === 'autoRotate')?.setValue(CONFIG.autoRotate);
+      }
+    });
+
+    // ==========================================
+    // 13. RESIZE HANDLING
+    // ==========================================
+    window.addEventListener('resize', () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(w, h);
+      composer.setSize(w, h);
+      bloomPass.resolution.set(w, h);
+    });
+
+    // Initialize environment state
+    updateEnvironmentState();
+
+    // ==========================================
+    // 14. ANIMATION LOOP
+    // ==========================================
+    const clock = new THREE.Clock();
+    let hasLoadedFirstFrame = false;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+
+      // Controls update
+      controls.update();
+
+      // 1. Subtle wind sway on canopy instances
+      const windForce = CONFIG.windStrength;
+      const windX = Math.cos(elapsed * 0.8) * windForce * 0.04;
+      const windZ = Math.sin(elapsed * 0.6) * windForce * 0.04;
+
+      // Canopy micro-flutter
+      if (windForce > 0.05) {
+        treeMesh.rotation.y = Math.sin(elapsed * 0.4) * 0.005 * windForce;
+      }
+
+      // 2. Falling Seasonal Particles Physics
+      const pCount = particlesMesh.count;
+      for (let i = 0; i < pCount; i++) {
+        const p = particleList[i];
+
+        if (p.isFirefly) {
+          // Fireflies float gently in 3D sine patterns
+          p.x += Math.sin(elapsed * 1.5 + p.wobblePhase) * 0.015;
+          p.y += Math.cos(elapsed * 1.8 + p.wobblePhase) * 0.012;
+          p.z += Math.sin(elapsed * 1.2 + p.wobblePhase) * 0.015;
+          p.rotX = elapsed * 1.2;
+          p.rotY = elapsed * 0.8;
+        } else {
+          // Fluttering aerodynamic descent
+          p.wobblePhase += p.wobbleSpeed * delta;
+          const flutter = Math.sin(p.wobblePhase) * 0.03 * (1 + windForce);
+
+          p.x += (p.vx + windX + flutter) * delta * 2.0;
+          p.y += p.vy * delta;
+          p.z += (p.vz + windZ + flutter * 0.5) * delta * 2.0;
+
+          p.rotX += p.spinX * delta;
+          p.rotY += p.spinY * delta;
+          p.rotZ += p.spinZ * delta;
+
+          // Ground bounce / recycle
+          if (p.y < 0.02) {
+            resetParticle(p, false);
+          }
+        }
+
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.rotation.set(p.rotX, p.rotY, p.rotZ);
+        dummy.scale.set(p.scale, p.scale, p.scale);
+        dummy.updateMatrix();
+
+        particlesMesh.setMatrixAt(i, dummy.matrix);
+      }
+      particlesMesh.instanceMatrix.needsUpdate = true;
+
+      // 3. Raycast Burst Particles
+      if (burstParticles.length > 0) {
+        let activeBursts = 0;
+        for (let b = 0; b < burstParticles.length; b++) {
+          const bp = burstParticles[b];
+          if (bp.life > 0) {
+            bp.life -= bp.decay * delta;
+            bp.pos.addScaledVector(bp.vel, delta);
+            bp.vel.y -= 3.8 * delta; // Gravity
+            bp.rot.x += bp.spin.x * delta;
+            bp.rot.y += bp.spin.y * delta;
+
+            const scale = bp.scale * Math.max(0, bp.life);
+            dummy.position.copy(bp.pos);
+            dummy.rotation.copy(bp.rot);
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+
+            burstMesh.setMatrixAt(b, dummy.matrix);
+            activeBursts++;
+          } else {
+            dummy.scale.set(0, 0, 0);
+            dummy.updateMatrix();
+            burstMesh.setMatrixAt(b, dummy.matrix);
+          }
+        }
+        burstMesh.instanceMatrix.needsUpdate = true;
+        if (activeBursts === 0) {
+          burstParticles.length = 0;
+          burstMesh.count = 0;
+        }
+      }
+
+      // Render with postprocessing
+      composer.render();
+
+      // Dismiss loading screen on first rendered frame
+      if (!hasLoadedFirstFrame) {
+        hasLoadedFirstFrame = true;
+        const loader = document.getElementById('loading-overlay');
+        if (loader) {
+          loader.classList.add('hidden');
+        }
+      }
+    }
+
+    animate();
+  </script>
+</body>
+</html>

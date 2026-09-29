@@ -1,0 +1,7 @@
+{
+  "name": "Chinese Blossom Tree 3D",
+  "description": "Interactive, realistic 3D Chinese blossom tree with procedural bark, seasonal petals, dynamic time-of-day lighting, and cinematic post-processing in Three.js.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
